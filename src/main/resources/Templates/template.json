@@ -1,0 +1,100 @@
+{
+    "jcr:primaryType": "cq:Page",
+    "jcr:content": {
+        "jcr:primaryType": "cq:PageContent",
+        "jcr:mixinTypes": [
+            "mix:versionable"
+        ],
+        "jcr:title": "pageTitleVariable",
+        "column": "1",
+        "cq:template": "/conf/cir2/cir2internal/settings/wcm/templates/bulletin-annoucement-template",
+        "cq:tags": [
+            "pageTagVariable"
+        ],
+        "sling:resourceType": "cir2/cir2internal/components/page/contentpage",
+        "originalPublishDate": "publishDateVariable",
+        "textIsRich": "true",
+        "cq:lastModifiedBy": "jeswin.varghese",
+        "root": {
+            "jcr:primaryType": "nt:unstructured",
+            "sling:resourceType": "wcm/foundation/components/responsivegrid",
+            "responsivegrid": {
+                "jcr:primaryType": "nt:unstructured",
+                "jcr:createdBy": "mbaldi",
+                "jcr:lastModifiedBy": "mbaldi",
+                "jcr:created": "Thu May 28 2020 02:00:22 GMT+0000",
+                "jcr:lastModified": "Tue Jun 16 2020 04:16:39 GMT+0000",
+                "sling:resourceType": "wcm/foundation/components/responsivegrid",
+                "cq:styleIds": [
+                    "1586040535072"
+                ],
+                "responsivegrid": {
+                    "jcr:primaryType": "nt:unstructured",
+                    "jcr:createdBy": "admin",
+                    "jcr:lastModifiedBy": "admin",
+                    "jcr:created": "Tue Aug 04 2020 03:20:56 GMT+0000",
+                    "jcr:lastModified": "Tue Aug 04 2020 03:20:56 GMT+0000",
+                    "sling:resourceType": "wcm/foundation/components/responsivegrid",
+                    "responsivegrid": {
+                        "jcr:primaryType": "nt:unstructured",
+                        "jcr:createdBy": "admin",
+                        "jcr:lastModifiedBy": "admin",
+                        "jcr:created": "Tue Aug 04 2020 03:28:25 GMT+0000",
+                        "jcr:lastModified": "Tue Aug 04 2020 03:32:52 GMT+0000",
+                        "sling:resourceType": "wcm/foundation/components/responsivegrid",
+                        "text": {
+                            "jcr:primaryType": "nt:unstructured",
+                            "jcr:createdBy": "admin",
+                            "jcr:lastModifiedBy": "jeswin.varghese",
+                            "text": "pageContentVariable",
+                            "sling:resourceType": "cir2/cir2internal/components/content/text",
+                            "textIsRich": "true"
+                        }
+                    }
+                },
+                "responsivegrid_copy": {
+                    "jcr:primaryType": "nt:unstructured",
+                    "sling:resourceType": "wcm/foundation/components/responsivegrid"
+                },
+                "responsivegrid_11582756": {
+                    "jcr:primaryType": "nt:unstructured",
+                    "jcr:createdBy": "mbaldi",
+                    "jcr:lastModifiedBy": "mbaldi",
+                    "jcr:created": "Wed Sep 16 2020 04:42:23 GMT+0000",
+                    "jcr:lastModified": "Wed Sep 16 2020 04:42:23 GMT+0000",
+                    "sling:resourceType": "wcm/foundation/components/responsivegrid"
+                }
+            },
+            "container": {
+                "jcr:primaryType": "nt:unstructured",
+                "jcr:createdBy": "mbaldi",
+                "jcr:lastModifiedBy": "mbaldi",
+                "layout": "simple",
+                "jcr:created": "Mon Jul 13 2020 00:16:01 GMT+0000",
+                "jcr:lastModified": "Mon Jul 13 2020 00:16:51 GMT+0000",
+                "sling:resourceType": "cir2/cir2internal/components/content/container",
+                "backgroundColor": "rgb(0,0,0)"
+            },
+            "responsivegrid_20479": {
+                "jcr:primaryType": "nt:unstructured",
+                "jcr:createdBy": "mbaldi",
+                "jcr:lastModifiedBy": "mbaldi",
+                "jcr:created": "Wed Sep 23 2020 16:18:20 GMT+0000",
+                "jcr:lastModified": "Wed Sep 23 2020 16:18:54 GMT+0000",
+                "sling:resourceType": "wcm/foundation/components/responsivegrid"
+            }
+        },
+        "landingTile": {
+            "jcr:primaryType": "nt:unstructured",
+            "description": "pageDescriptionVariable",
+            "eyebrow": [
+                "pageTagVariable"
+            ]
+        },
+        "megaMenu": {
+            "jcr:primaryType": "nt:unstructured",
+            "layoutType": "Standard",
+            "ctaType": "Button"
+        }
+    }
+}
