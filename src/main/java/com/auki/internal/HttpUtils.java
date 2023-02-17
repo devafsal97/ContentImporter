@@ -1,14 +1,17 @@
 package com.auki.internal;
 
+import com.auki.internal.processingutils.LinkHandler;
 import lombok.extern.java.Log;
 import okhttp3.*;
 import org.json.JSONException;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 
@@ -19,6 +22,8 @@ public class HttpUtils {
         private static String username = "admin";
         private static String password = "admin";
         private static ArrayList<String> filterArray = new ArrayList();
+
+        private static ArrayList<String> errorPagesPathArray = new ArrayList();
         private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MMddhhmmss");
         private static String dateAsString = simpleDateFormat.format(new Date());
 
@@ -26,7 +31,7 @@ public class HttpUtils {
         private static String grpName = "my_packages";
 
         public void createPage(String title, String fileName, String currentDirectory, String description ) throws IOException {
-                String name = title.replaceAll("[^A-Za-z]","-").toLowerCase();
+                String name = title.replaceAll("[^A-Za-z0-9]","-").toLowerCase();
                 String operation = "import";
                 String contentType = "json";
                 String replace = "true";
@@ -65,9 +70,16 @@ public class HttpUtils {
                 Call call = httpClient.newCall(request);
                 Response response = call.execute();
                 if (response.code() == 201) {
+                    log.info(String.valueOf(response));
                     log.info("page created successfuly for" + name);
                     filterArray.add(pagePath);
+                } else if(response.code() == 200){
+                    log.info(String.valueOf(response));
+                    log.severe("page already exist" + name);
+                    errorPagesPathArray.add(pagePath);
                 } else {
+                    errorPagesPathArray.add(pagePath);
+                    log.info(String.valueOf(response));
                     log.severe(response.toString());
                 }
         }
@@ -150,5 +162,31 @@ public class HttpUtils {
                     log.info("package build failed");
                     log.severe(response.toString());
                 }
+                log.info("path of pages not created: " + errorPagesPathArray.toString());
+                log.info("Links Updated Info" + LinkHandler.linksInfoArray);
+    }
+
+    public void uploadImage(String path, String imageName) throws IOException {
+        OkHttpClient client = new OkHttpClient();
+        String userName = username;
+        String passWord = password;
+        String credentials = userName + ":" + passWord;
+        String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
+        String url = "http://localhost:4502/api/assets/cir2/images/" + imageName;
+        File file = new File(path);
+        RequestBody requestBody = RequestBody.create(MediaType.parse("image/jpeg"), file);
+        Request request = new Request.Builder()
+                .addHeader("Authorization", "Basic " + encodedCredentials)
+                .url(url)
+                .post(requestBody)
+                .build();
+            Response response = client.newCall(request).execute();
+            if (response.isSuccessful()) {
+                log.info("Image uploaded successfully!");
+                filterArray.add("/content/dam/cir2/images/" + imageName);
+
+            } else {
+                log.severe("Error: " + response.code() + " - " + response.message());
+            }
     }
 }

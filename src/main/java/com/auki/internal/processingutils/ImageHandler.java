@@ -1,5 +1,6 @@
 package com.auki.internal.processingutils;
 
+import com.auki.internal.HttpUtils;
 import sun.misc.BASE64Decoder;
 
 import javax.imageio.ImageIO;
@@ -9,7 +10,7 @@ import java.io.File;
 import java.io.IOException;
 
 public class ImageHandler {
-    public static String imageHandler(String html, String fileName, String currentDirectory) throws IOException {
+    public static String imageHandler(String html, String fileName, String currentDirectory, HttpUtils httpUtils) throws IOException {
 
         int index = 0;
         int imageCount = 1;
@@ -28,8 +29,8 @@ public class ImageHandler {
             image = ImageIO.read(bis);
             bis.close();
 
-            imageName = fileName + imageCount;
-            File outputfile = new File(currentDirectory + "/"+ fileName + "/" + imageName + ".png");
+            imageName = fileName + imageCount + ".png";
+            File outputfile = new File(currentDirectory + "/"+ fileName + "/" + imageName);
             System.out.println(outputfile.getName().toString());
             ImageIO.write(image, "png", outputfile);
 
@@ -37,6 +38,7 @@ public class ImageHandler {
             StringBuffer stringBuffer = new StringBuffer(html);
             stringBuffer.replace(srcIndex + 5, imgEndIndex - 2, imagePath);
             html = String.valueOf(stringBuffer);
+            httpUtils.uploadImage(outputfile.getPath(),imageName);
             index = imgEndIndex;
             imageCount = imageCount + 1;
         }

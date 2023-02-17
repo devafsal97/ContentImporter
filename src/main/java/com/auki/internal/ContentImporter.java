@@ -10,12 +10,12 @@ import java.io.File;
 public class ContentImporter {
 
     public static void main(String[] args) {
+
         try{
             File jarPath=new File(ContentImporter.class.getProtectionDomain().getCodeSource().getLocation().getPath());
             String currentDirectory=jarPath.getParentFile().getAbsolutePath();
-            log.info("current directory:" + currentDirectory);
             HttpUtils httpUtils = new HttpUtils();
-            RenameFiles.RenameFiles(currentDirectory);
+            RenameFiles.renameFiles(currentDirectory);
             CreateTemplate.createTemplate(currentDirectory,httpUtils);
             httpUtils.createPackage();
             httpUtils.createFilters();

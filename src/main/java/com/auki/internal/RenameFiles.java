@@ -6,7 +6,7 @@ import java.io.File;
 
 @Log
 public class RenameFiles {
-    public static void RenameFiles(String currentDirectory) {
+    public static void renameFiles(String currentDirectory) {
             String oldName;
             String newName;
             String fileNameWithOutExt;

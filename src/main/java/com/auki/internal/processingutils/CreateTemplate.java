@@ -58,14 +58,37 @@ public class CreateTemplate {
 
                 DocumentConverter converter = new DocumentConverter();
                 Result<String> result = converter.convertToHtml(myDataTxt);
-
                 String html = result.getValue();
-                int pIndex = html.indexOf("<p>", 1);
                 int firstDashIndex = html.indexOf("–");
                 int secndDashIndex = html.indexOf("–", firstDashIndex + 1);
                 int dateComaIndex = html.indexOf(",",secndDashIndex);
+                int strongTagIndex = html.indexOf("</strong>",1);
+                String ptagString = "";
+                ptagString = html.substring(strongTagIndex + 9,strongTagIndex + 13);
+                if(!ptagString.equals("</p>")){
+                    StringBuffer stringBuffer = new StringBuffer(html);
+                    stringBuffer.insert(strongTagIndex + 9,"</p><p>");
+                    html = String.valueOf(stringBuffer).replaceAll("<br />","");
+                }
+                int h1TagIndex = 0;
+                while ((h1TagIndex = html.indexOf("<h1>", h1TagIndex)) != -1) {
+                    int h1TagEndIndex = html.indexOf("</h1>", h1TagIndex);
+                    String subString = html.substring(h1TagIndex,h1TagEndIndex);
+                    if(subString.contains("<a")){
+                        int aIndex = subString.indexOf("<a");
+                        int aEndIndex = subString.indexOf("</a>",aIndex);
+                        String newSubString = subString.substring(aIndex,aEndIndex + 4);
+                        String replacedString = subString.replace(newSubString,"");
+                        StringBuffer stringBuffer = new StringBuffer(html);
+                        stringBuffer.replace(h1TagIndex,h1TagEndIndex,replacedString);
+                        html = String.valueOf(stringBuffer);
+                    }
+                    h1TagIndex = h1TagEndIndex;
+                }
+                html = html.replaceAll("<h1>","<b>").replaceAll("</h1>","</b>");
 
-                title = html.substring(11, firstDashIndex - 1);
+                int pIndex = html.indexOf("<p>", 1);
+                title = html.substring(11, firstDashIndex - 1).replaceAll("<sup>"," ").replaceAll("</sup>","").replaceAll("<em>","").replaceAll("</em>","");
                 description = html.substring(firstDashIndex + 2, secndDashIndex - 1);
 
                 String smallDate = html.substring(secndDashIndex + 2, dateComaIndex + 6);
@@ -76,9 +99,9 @@ public class CreateTemplate {
                 fileName = listOfFiles[i].getName().replaceFirst("[.][^.]+$", "");
                 Files.createDirectories(Paths.get(currentDirectory + "/" + fileName));
 
-                html = ImageHandler.imageHandler(html,fileName,currentDirectory);
+                html = ImageHandler.imageHandler(html,fileName,currentDirectory,httpUtils);
                 html = TableHandler.tableHandler(html);
-                html = LinkHandler.linkHandler(html);
+                html = LinkHandler.linkHandler(html,fileName);
 
                 int dashIndex = description.indexOf("-");
                 String tagType = description.substring(0,dashIndex);
@@ -86,7 +109,14 @@ public class CreateTemplate {
                 tagArray[0] = tagObject.get(tagType);
 
                 // assigning values to templates.
-                content = html.substring(pIndex);
+                int index = html.lastIndexOf("<p>");
+                StringBuffer stringBuffer = new StringBuffer(html);
+                int length = html.length();
+                stringBuffer.replace(index,length,"");
+                content = String.valueOf(stringBuffer);
+                content = content.substring(pIndex);
+
+
                 jsonObject.getJSONObject("jcr:content").remove("jcr:title");
                 jsonObject.getJSONObject("jcr:content").put("jcr:title", title);
                 jsonObject.getJSONObject("jcr:content").remove("cq:tags");
