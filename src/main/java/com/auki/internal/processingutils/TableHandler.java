@@ -74,7 +74,6 @@ public class TableHandler {
             String subString = html.substring(theadIndex,theadEndIndex);
             int lastIndex = 0;
             int count = 0;
-
             while(lastIndex != -1){
 
                 lastIndex = subString.indexOf("</th>",lastIndex);

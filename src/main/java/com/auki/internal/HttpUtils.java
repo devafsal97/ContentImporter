@@ -82,6 +82,7 @@ public class HttpUtils {
                     log.info(String.valueOf(response));
                     log.severe(response.toString());
                 }
+                createPackage();
         }
 
         public void createPackage() throws JSONException, IOException {
@@ -104,6 +105,7 @@ public class HttpUtils {
                 } else {
                     log.severe(response.toString());
                 }
+                createFilters();
     }
 
         public void createFilters() throws IOException {
@@ -145,6 +147,7 @@ public class HttpUtils {
                        log.severe(responseRoot.toString());
                     }
                 }
+                buildPackage();
     }
         public void buildPackage() throws IOException {
                 Request request = new Request.Builder()
@@ -172,6 +175,9 @@ public class HttpUtils {
         String passWord = password;
         String credentials = userName + ":" + passWord;
         String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
+        log.info(path);
+        log.info(imageName);
+        log.info("http://localhost:4502/api/assets/cir2/images/" + imageName);
         String url = "http://localhost:4502/api/assets/cir2/images/" + imageName;
         File file = new File(path);
         RequestBody requestBody = RequestBody.create(MediaType.parse("image/jpeg"), file);
@@ -188,5 +194,28 @@ public class HttpUtils {
             } else {
                 log.severe("Error: " + response.code() + " - " + response.message());
             }
+    }
+    public void uploadPdf(String fileName,String currentDirectory) throws IOException {
+        OkHttpClient client = new OkHttpClient();
+        String userName = username;
+        String passWord = password;
+        String credentials = userName + ":" + passWord;
+        String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
+        log.info("http://localhost:4502/api/assets/cir2/document/internal/" + fileName);
+        String url = "http://localhost:4502/api/assets/cir2/document/internal/" + fileName;
+        File file = new File(currentDirectory + "/" + fileName );
+        RequestBody requestBody = RequestBody.create(MediaType.parse("image/jpeg"), file);
+        Request request = new Request.Builder()
+                .addHeader("Authorization", "Basic " + encodedCredentials)
+                .url(url)
+                .post(requestBody)
+                .build();
+        Response response = client.newCall(request).execute();
+        if (response.isSuccessful()) {
+            log.info("pdf uploaded successfully!");
+            filterArray.add("/content/dam/cir2/document/internal/" + fileName);
+        } else {
+            log.severe("Error: " + response.code() + " - " + response.message());
+        }
     }
 }

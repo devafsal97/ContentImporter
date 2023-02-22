@@ -20,7 +20,7 @@ import java.util.Locale;
 @Log
 public class CreateTemplate {
 
-    public static void createTemplate(String currentDirectory, HttpUtils httpUtils) throws IOException, ParseException {
+    public static void createTemplate(String currentDirectory) throws IOException, ParseException {
 
         String title, content, description, date, fileName;
         HashMap<String, String> tagObject = new HashMap<>();
@@ -42,6 +42,7 @@ public class CreateTemplate {
         Object obj = parser.parse(new InputStreamReader(resource));
         String jsonString = obj.toString();
         JSONObject jsonObject = new JSONObject(jsonString);
+        HttpUtils httpUtils = new HttpUtils();
 
         File folder = new File(currentDirectory);
         File[] listOfFiles = folder.listFiles();
@@ -53,94 +54,96 @@ public class CreateTemplate {
             int extIndex = currentFileName.lastIndexOf('.');
             if(extIndex > 0) {
                 extension =  currentFileName.substring(extIndex + 1).toString();
-            }
-            if (!"jar".equals(extension)) {
+                if (!"jar".equals(extension) && !"pdf".equals(extension)) {
 
-                DocumentConverter converter = new DocumentConverter();
-                Result<String> result = converter.convertToHtml(myDataTxt);
-                String html = result.getValue();
-                int firstDashIndex = html.indexOf("–");
-                int secndDashIndex = html.indexOf("–", firstDashIndex + 1);
-                int dateComaIndex = html.indexOf(",",secndDashIndex);
-                int strongTagIndex = html.indexOf("</strong>",1);
-                String ptagString = "";
-                ptagString = html.substring(strongTagIndex + 9,strongTagIndex + 13);
-                if(!ptagString.equals("</p>")){
-                    StringBuffer stringBuffer = new StringBuffer(html);
-                    stringBuffer.insert(strongTagIndex + 9,"</p><p>");
-                    html = String.valueOf(stringBuffer).replaceAll("<br />","");
-                }
-                int h1TagIndex = 0;
-                while ((h1TagIndex = html.indexOf("<h1>", h1TagIndex)) != -1) {
-                    int h1TagEndIndex = html.indexOf("</h1>", h1TagIndex);
-                    String subString = html.substring(h1TagIndex,h1TagEndIndex);
-                    if(subString.contains("<a")){
-                        int aIndex = subString.indexOf("<a");
-                        int aEndIndex = subString.indexOf("</a>",aIndex);
-                        String newSubString = subString.substring(aIndex,aEndIndex + 4);
-                        String replacedString = subString.replace(newSubString,"");
+                    DocumentConverter converter = new DocumentConverter();
+                    Result<String> result = converter.convertToHtml(myDataTxt);
+                    String html = result.getValue();
+                    int firstDashIndex = html.indexOf("–");
+                    int secndDashIndex = html.indexOf("–", firstDashIndex + 1);
+                    int dateComaIndex = html.indexOf(",",secndDashIndex);
+                    int strongTagIndex = html.indexOf("</strong>",1);
+                    String ptagString = "";
+                    ptagString = html.substring(strongTagIndex + 9,strongTagIndex + 13);
+                    if(!ptagString.equals("</p>")){
                         StringBuffer stringBuffer = new StringBuffer(html);
-                        stringBuffer.replace(h1TagIndex,h1TagEndIndex,replacedString);
-                        html = String.valueOf(stringBuffer);
+                        stringBuffer.insert(strongTagIndex + 9,"</p><p>");
+                        html = String.valueOf(stringBuffer).replaceAll("<br />","");
                     }
-                    h1TagIndex = h1TagEndIndex;
+                    int h1TagIndex = 0;
+                    while ((h1TagIndex = html.indexOf("<h1>", h1TagIndex)) != -1) {
+                        int h1TagEndIndex = html.indexOf("</h1>", h1TagIndex);
+                        String subString = html.substring(h1TagIndex,h1TagEndIndex);
+                        if(subString.contains("<a")){
+                            int aIndex = subString.indexOf("<a");
+                            int aEndIndex = subString.indexOf("</a>",aIndex);
+                            String newSubString = subString.substring(aIndex,aEndIndex + 4);
+                            String replacedString = subString.replace(newSubString,"");
+                            StringBuffer stringBuffer = new StringBuffer(html);
+                            stringBuffer.replace(h1TagIndex,h1TagEndIndex,replacedString);
+                            html = String.valueOf(stringBuffer);
+                        }
+                        h1TagIndex = h1TagEndIndex;
+                    }
+                    html = html.replaceAll("<h1>","<b>").replaceAll("</h1>","</b>");
+
+                    int pIndex = html.indexOf("<p>", 1);
+                    title = html.substring(11, firstDashIndex - 1).replaceAll("<sup>"," ").replaceAll("</sup>","").replaceAll("<em>","").replaceAll("</em>","");
+                    description = html.substring(firstDashIndex + 2, secndDashIndex - 1);
+
+                    String smallDate = html.substring(secndDashIndex + 2, dateComaIndex + 6);
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH);
+                    LocalDate localDate = LocalDate.parse(smallDate, formatter);
+                    date = localDate.toString() + "T19:30:00.000+05:30";
+
+                    fileName = listOfFiles[i].getName().replaceFirst("[.][^.]+$", "");
+                    Files.createDirectories(Paths.get(currentDirectory + "/" + fileName));
+
+                    html = ImageHandler.imageHandler(html,fileName,currentDirectory,httpUtils);
+                    html = TableHandler.tableHandler(html);
+                    html = LinkHandler.linkHandler(html,fileName);
+                    html= PdfHandler.handlePdf(html,currentDirectory,description,httpUtils);
+
+                    int dashIndex = description.indexOf("-");
+                    String tagType = description.substring(0,dashIndex);
+                    String[] tagArray = new String[1];
+                    tagArray[0] = tagObject.get(tagType);
+
+                    // assigning values to templates.
+                    int index = html.lastIndexOf("<p>");
+                    StringBuffer stringBuffer = new StringBuffer(html);
+                    int length = html.length();
+                    stringBuffer.replace(index,length,"");
+                    content = String.valueOf(stringBuffer);
+                    content = content.substring(pIndex);
+
+
+                    jsonObject.getJSONObject("jcr:content").remove("jcr:title");
+                    jsonObject.getJSONObject("jcr:content").put("jcr:title", title);
+                    jsonObject.getJSONObject("jcr:content").remove("cq:tags");
+                    jsonObject.getJSONObject("jcr:content").put("cq:tags",tagArray);
+                    jsonObject.getJSONObject("jcr:content").remove("originalPublishDate");
+                    jsonObject.getJSONObject("jcr:content").put("originalPublishDate", date);
+                    jsonObject.getJSONObject("jcr:content").getJSONObject("root").getJSONObject("responsivegrid").getJSONObject("responsivegrid").getJSONObject("responsivegrid").getJSONObject("text").remove("text");
+                    jsonObject.getJSONObject("jcr:content").getJSONObject("root").getJSONObject("responsivegrid").getJSONObject("responsivegrid").getJSONObject("responsivegrid").getJSONObject("text").put("text", content);
+                    jsonObject.getJSONObject("jcr:content").getJSONObject("landingTile").remove("description");
+                    jsonObject.getJSONObject("jcr:content").getJSONObject("landingTile").put("description", description);
+                    jsonObject.getJSONObject("jcr:content").getJSONObject("landingTile").remove("eyebrow");
+                    jsonObject.getJSONObject("jcr:content").getJSONObject("landingTile").put("eyebrow",tagArray);
+
+                    //saving created templates.
+                    try (PrintWriter out = new PrintWriter(new FileWriter(currentDirectory + "/" + fileName + "/" + "templateedited.json"))) {
+                        out.write(jsonObject.toString());
+                        log.info("template created and saved for file: " + fileName);
+                    } catch (Exception e) {
+                        log.severe(e.getMessage());
+                    }
+                    //calling createpage method.
+                    httpUtils.createPage(title,fileName,currentDirectory, description);
+
                 }
-                html = html.replaceAll("<h1>","<b>").replaceAll("</h1>","</b>");
-
-                int pIndex = html.indexOf("<p>", 1);
-                title = html.substring(11, firstDashIndex - 1).replaceAll("<sup>"," ").replaceAll("</sup>","").replaceAll("<em>","").replaceAll("</em>","");
-                description = html.substring(firstDashIndex + 2, secndDashIndex - 1);
-
-                String smallDate = html.substring(secndDashIndex + 2, dateComaIndex + 6);
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH);
-                LocalDate localDate = LocalDate.parse(smallDate, formatter);
-                date = localDate.toString() + "T19:30:00.000+05:30";
-
-                fileName = listOfFiles[i].getName().replaceFirst("[.][^.]+$", "");
-                Files.createDirectories(Paths.get(currentDirectory + "/" + fileName));
-
-                html = ImageHandler.imageHandler(html,fileName,currentDirectory,httpUtils);
-                html = TableHandler.tableHandler(html);
-                html = LinkHandler.linkHandler(html,fileName);
-
-                int dashIndex = description.indexOf("-");
-                String tagType = description.substring(0,dashIndex);
-                String[] tagArray = new String[1];
-                tagArray[0] = tagObject.get(tagType);
-
-                // assigning values to templates.
-                int index = html.lastIndexOf("<p>");
-                StringBuffer stringBuffer = new StringBuffer(html);
-                int length = html.length();
-                stringBuffer.replace(index,length,"");
-                content = String.valueOf(stringBuffer);
-                content = content.substring(pIndex);
-
-
-                jsonObject.getJSONObject("jcr:content").remove("jcr:title");
-                jsonObject.getJSONObject("jcr:content").put("jcr:title", title);
-                jsonObject.getJSONObject("jcr:content").remove("cq:tags");
-                jsonObject.getJSONObject("jcr:content").put("cq:tags",tagArray);
-                jsonObject.getJSONObject("jcr:content").remove("originalPublishDate");
-                jsonObject.getJSONObject("jcr:content").put("originalPublishDate", date);
-                jsonObject.getJSONObject("jcr:content").getJSONObject("root").getJSONObject("responsivegrid").getJSONObject("responsivegrid").getJSONObject("responsivegrid").getJSONObject("text").remove("text");
-                jsonObject.getJSONObject("jcr:content").getJSONObject("root").getJSONObject("responsivegrid").getJSONObject("responsivegrid").getJSONObject("responsivegrid").getJSONObject("text").put("text", content);
-                jsonObject.getJSONObject("jcr:content").getJSONObject("landingTile").remove("description");
-                jsonObject.getJSONObject("jcr:content").getJSONObject("landingTile").put("description", description);
-                jsonObject.getJSONObject("jcr:content").getJSONObject("landingTile").remove("eyebrow");
-                jsonObject.getJSONObject("jcr:content").getJSONObject("landingTile").put("eyebrow",tagArray);
-
-                //saving created templates.
-                try (PrintWriter out = new PrintWriter(new FileWriter(currentDirectory + "/" + fileName + "/" + "templateedited.json"))) {
-                    out.write(jsonObject.toString());
-                    log.info("template created and saved for file: " + fileName);
-                } catch (Exception e) {
-                    log.severe(e.getMessage());
-                }
-                //calling createpage method.
-                httpUtils.createPage(title,fileName,currentDirectory, description);
-
             }
+
         }
 
     }

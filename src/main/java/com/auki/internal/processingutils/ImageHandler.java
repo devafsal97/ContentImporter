@@ -34,7 +34,7 @@ public class ImageHandler {
             System.out.println(outputfile.getName().toString());
             ImageIO.write(image, "png", outputfile);
 
-            String imagePath = "/content/dam/cir2/images/" + imageName + ".png";
+            String imagePath = "/content/dam/cir2/images/" + imageName;
             StringBuffer stringBuffer = new StringBuffer(html);
             stringBuffer.replace(srcIndex + 5, imgEndIndex - 2, imagePath);
             html = String.valueOf(stringBuffer);

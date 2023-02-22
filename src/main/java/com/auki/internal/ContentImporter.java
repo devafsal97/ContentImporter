@@ -14,15 +14,11 @@ public class ContentImporter {
         try{
             File jarPath=new File(ContentImporter.class.getProtectionDomain().getCodeSource().getLocation().getPath());
             String currentDirectory=jarPath.getParentFile().getAbsolutePath();
-            HttpUtils httpUtils = new HttpUtils();
             RenameFiles.renameFiles(currentDirectory);
-            CreateTemplate.createTemplate(currentDirectory,httpUtils);
-            httpUtils.createPackage();
-            httpUtils.createFilters();
-            httpUtils.buildPackage();
+            CreateTemplate.createTemplate(currentDirectory);
         }
         catch (Exception exception){
-            log.severe(exception.getMessage());
+            log.info(exception.getMessage());
         }
     }
 }
