@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
@@ -31,7 +33,16 @@ public class HttpUtils {
         private static String grpName = "my_packages";
 
         public void createPage(String title, String fileName, String currentDirectory, String description ) throws IOException {
+                LocalDate currentDate = LocalDate.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMddyy");
+                String date=currentDate.format(formatter);
+
                 String name = title.replaceAll("[^A-Za-z0-9]","-").toLowerCase();
+                String fullName = description + "-" + name + "-"+date;
+                fullName = fullName.replaceAll("\\-{2,}", "-");
+
+
+
                 String operation = "import";
                 String contentType = "json";
                 String replace = "true";
@@ -51,9 +62,9 @@ public class HttpUtils {
                 AnnouncementType.put("WP", "wealthport");
                 AnnouncementType.put("WS", "wealth-strategies");
                 String url = "http://" + host + ":" + port + "/content/cir2-internal/news-and-events/communications-from-cambridge/bulletins/" + AnnouncementType.get(ancmntType);
-                String pagePath = "/content/cir2-internal/news-and-events/communications-from-cambridge/bulletins/" + AnnouncementType.get(ancmntType) + "/" + name;
+                String pagePath = "/content/cir2-internal/news-and-events/communications-from-cambridge/bulletins/" + AnnouncementType.get(ancmntType) + "/" + fullName;
                 RequestBody formBody = new FormBody.Builder()
-                        .add(":name", name)
+                        .add(":name", fullName)
                         .add(":operation", operation)
                         .add(":contentType", contentType)
                         .add(":replace", replace)
@@ -169,16 +180,24 @@ public class HttpUtils {
                 log.info("Links Updated Info" + LinkHandler.linksInfoArray);
     }
 
-    public void uploadImage(String path, String imageName) throws IOException {
+    public void uploadImage(String path, String imageName, String title, String description) throws IOException {
+        LocalDate currentDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMddyy");
+        String date=currentDate.format(formatter);
+
+        String name = title.replaceAll("[^A-Za-z0-9]","_").toLowerCase();
+        String fullName = description + "-" + name + "-"+date;
+        fullName = fullName.replaceAll("\\_{2,}", "_");
+
         OkHttpClient client = new OkHttpClient();
         String userName = username;
         String passWord = password;
         String credentials = userName + ":" + passWord;
         String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
         log.info(path);
-        log.info(imageName);
-        log.info("http://localhost:4502/api/assets/cir2/images/" + imageName);
-        String url = "http://localhost:4502/api/assets/cir2/images/" + imageName;
+        log.info(fullName);
+        log.info("http://localhost:4502/api/assets/cir2/images/" + fullName);
+        String url = "http://localhost:4502/api/assets/cir2/images/" + fullName + ".png";
         File file = new File(path);
         RequestBody requestBody = RequestBody.create(MediaType.parse("image/jpeg"), file);
         Request request = new Request.Builder()
@@ -189,20 +208,28 @@ public class HttpUtils {
             Response response = client.newCall(request).execute();
             if (response.isSuccessful()) {
                 log.info("Image uploaded successfully!");
-                filterArray.add("/content/dam/cir2/images/" + imageName);
+                filterArray.add("/content/dam/cir2/images/" + fullName + ".png");
 
             } else {
                 log.severe("Error: " + response.code() + " - " + response.message());
             }
     }
-    public void uploadPdf(String fileName,String currentDirectory) throws IOException {
+    public void uploadPdf(String fileName,String currentDirectory,String title,String description) throws IOException {
+        LocalDate currentDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMddyy");
+        String date=currentDate.format(formatter);
+
+        String name = title.replaceAll("[^A-Za-z0-9]","_").toLowerCase();
+        String fullName = description + "-" + name + "-"+date;
+        fullName = fullName.replaceAll("\\_{2,}", "_");
+
         OkHttpClient client = new OkHttpClient();
         String userName = username;
         String passWord = password;
         String credentials = userName + ":" + passWord;
         String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
-        log.info("http://localhost:4502/api/assets/cir2/document/internal/" + fileName);
-        String url = "http://localhost:4502/api/assets/cir2/document/internal/" + fileName;
+        log.info("http://localhost:4502/api/assets/cir2/document/internal/" + fullName);
+        String url = "http://localhost:4502/api/assets/cir2/document/internal/" + fullName + ".pdf";
         File file = new File(currentDirectory + "/" + fileName );
         RequestBody requestBody = RequestBody.create(MediaType.parse("image/jpeg"), file);
         Request request = new Request.Builder()
@@ -213,7 +240,7 @@ public class HttpUtils {
         Response response = client.newCall(request).execute();
         if (response.isSuccessful()) {
             log.info("pdf uploaded successfully!");
-            filterArray.add("/content/dam/cir2/document/internal/" + fileName);
+            filterArray.add("/content/dam/cir2/document/internal/" + fullName + ".pdf");
         } else {
             log.severe("Error: " + response.code() + " - " + response.message());
         }

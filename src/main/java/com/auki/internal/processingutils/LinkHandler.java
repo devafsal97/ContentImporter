@@ -35,6 +35,21 @@ public class LinkHandler {
             html = String.valueOf(stringBuffer);
             aTagIndex = aTagEndIndex;
         }
+
+        int aTagIndex1 = 0;
+        while ((aTagIndex1 = html.indexOf("<a", aTagIndex1)) != -1) {
+            int aTagEndIndex = html.indexOf("\">", aTagIndex1);
+            int endIndex = html.indexOf("</a>",aTagIndex1);
+            String substring = html.substring(aTagIndex1,endIndex);
+            if (!substring.contains("<u>")){
+                StringBuffer stringBuffer = new StringBuffer(html);
+                stringBuffer.insert(endIndex,"</u>");
+                stringBuffer.insert(aTagEndIndex + 2,"<u>");
+                html = String.valueOf(stringBuffer);
+            }
+            aTagIndex1 = endIndex;
+
+        }
         return html;
     }
 }

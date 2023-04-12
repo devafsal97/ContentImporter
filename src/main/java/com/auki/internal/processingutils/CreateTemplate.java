@@ -3,9 +3,10 @@ package com.auki.internal.processingutils;
 import com.auki.internal.ContentImporter;
 import com.auki.internal.HttpUtils;
 import lombok.extern.java.Log;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.json.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 import org.zwobble.mammoth.DocumentConverter;
 import org.zwobble.mammoth.Result;
 
@@ -14,16 +15,20 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Log
 public class CreateTemplate {
 
-    public static void createTemplate(String currentDirectory) throws IOException, ParseException {
+    public static void createTemplate(String currentDirectory) throws Exception {
 
-        String title, content, description, date, fileName;
+        String title = "", content, description = "", date, fileName,dateFromDoc = "";
         HashMap<String, String> tagObject = new HashMap<>();
+        Collections.sort(ContentImporter.fileNameList);
+        log.info(ContentImporter.fileNameList.toString());
         tagObject.put("CA","cir2:news/annoucements/caap");
         tagObject.put("CS","cir2:news/annoucements/cambridge-source");
         tagObject.put("CL","cir2:news/annoucements/clic");
@@ -35,6 +40,11 @@ public class CreateTemplate {
         tagObject.put("WP","cir2:news/annoucements/wealthport");
         tagObject.put("WS","cir2:news/annoucements/wealth-strategies");
 
+        LocalDate currentDate = LocalDate.now();
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String formattedDate = currentDate.format(dateFormat);
+        int time = 30;
+
         String inputFilePath = "Templates/template.json" ;
         ClassLoader classLoader = ContentImporter.class.getClassLoader();
         InputStream resource = classLoader.getResourceAsStream(inputFilePath);
@@ -44,11 +54,12 @@ public class CreateTemplate {
         JSONObject jsonObject = new JSONObject(jsonString);
         HttpUtils httpUtils = new HttpUtils();
 
-        File folder = new File(currentDirectory);
-        File[] listOfFiles = folder.listFiles();
-        for (int i = 0; i < listOfFiles.length; i++) {
 
-            File myDataTxt = listOfFiles[i];
+
+        File folder = new File(currentDirectory);
+        for (int i = 0; i < ContentImporter.fileNameList.size(); i++) {
+
+            File myDataTxt = new File(currentDirectory + "/" + ContentImporter.fileNameList.get(i));
             String currentFileName = myDataTxt.getName();
             String extension = "jar";
             int extIndex = currentFileName.lastIndexOf('.');
@@ -56,21 +67,67 @@ public class CreateTemplate {
                 extension =  currentFileName.substring(extIndex + 1).toString();
                 if (!"jar".equals(extension) && !"pdf".equals(extension)) {
 
-                    DocumentConverter converter = new DocumentConverter();
+                    DocumentConverter converter = new DocumentConverter().addStyleMap("u => u");
                     Result<String> result = converter.convertToHtml(myDataTxt);
                     String html = result.getValue();
-                    int firstDashIndex = html.indexOf("–");
-                    int secndDashIndex = html.indexOf("–", firstDashIndex + 1);
-                    int dateComaIndex = html.indexOf(",",secndDashIndex);
-                    int strongTagIndex = html.indexOf("</strong>",1);
-                    String ptagString = "";
-                    ptagString = html.substring(strongTagIndex + 9,strongTagIndex + 13);
-                    if(!ptagString.equals("</p>")){
-                        StringBuffer stringBuffer = new StringBuffer(html);
-                        stringBuffer.insert(strongTagIndex + 9,"</p><p>");
-                        html = String.valueOf(stringBuffer).replaceAll("<br />","");
+                    int pTagIndex = html.indexOf("</p>");
+
+                    FileInputStream fis = new FileInputStream(myDataTxt);
+                    XWPFDocument docx = new XWPFDocument(fis);
+                    XWPFParagraph firstParagraph = docx.getParagraphs().get(0);
+                    String firstLine = firstParagraph.getText();
+                    fis.close();
+
+                    if(!firstLine.equals("")){
+                        Pattern pattern = Pattern.compile("[A-Z]{1,4}-\\d{1,2}-\\d{1,3}");
+                        Matcher matcher = pattern.matcher(firstLine);
+                        if (matcher.find()) {
+                            description = matcher.group();
+                        }
+                        String regexPattern = "(\\b(January|February|March|April|May|June|July|August|September|October|November|December)\\s\\d{1,2},\\s\\d{4}\\b)";
+                        Pattern datePattern = Pattern.compile(regexPattern);
+                        Matcher dateMatcher = datePattern.matcher(firstLine);
+
+                        if (dateMatcher.find()) {
+                            dateFromDoc = dateMatcher.group(1);
+                        }
+                        int descriptionIndex = firstLine.indexOf(description);
+                        StringBuffer stringBuffer1 = new StringBuffer(firstLine);
+                        stringBuffer1 = stringBuffer1.replace(descriptionIndex,firstLine.length(),"");
+                        firstLine = String.valueOf(stringBuffer1);
+//                    firstLine = firstLine.replace(description,"");
+//                    firstLine = firstLine.replace(dateFromDoc,"");
+                        firstLine = firstLine.replaceAll("\\<.*?\\>", "");
+                        firstLine = firstLine.replace("–","").trim();
+                        title = firstLine;
                     }
+
+
+
+                    if(title.equals("")){
+                        String headString = html.substring(0,pTagIndex);
+                        Pattern pattern1 = Pattern.compile("[A-Z]{1,4}-\\d{1,2}-\\d{1,3}");
+                        Matcher matcher1 = pattern1.matcher(headString);
+                        if (matcher1.find()) {
+                            description = matcher1.group();
+                        }
+                        String regexPattern1 = "(\\b(January|February|March|April|May|June|July|August|September|October|November|December)\\s\\d{1,2},\\s\\d{4}\\b)";
+                        Pattern datePattern1 = Pattern.compile(regexPattern1);
+                        Matcher dateMatcher1 = datePattern1.matcher(headString);
+
+                        if (dateMatcher1.find()) {
+                            dateFromDoc = dateMatcher1.group(1);
+                        }
+                        headString = headString.replace(description,"");
+                        headString = headString.replace(dateFromDoc,"");
+                        headString = headString.replaceAll("\\<.*?\\>", "");
+                        headString = headString.replace("–","").trim();
+                        title = headString;
+                    }
+
+                    html = html.replaceAll("<br />","");
                     int h1TagIndex = 0;
+
                     while ((h1TagIndex = html.indexOf("<h1>", h1TagIndex)) != -1) {
                         int h1TagEndIndex = html.indexOf("</h1>", h1TagIndex);
                         String subString = html.substring(h1TagIndex,h1TagEndIndex);
@@ -87,22 +144,21 @@ public class CreateTemplate {
                     }
                     html = html.replaceAll("<h1>","<b>").replaceAll("</h1>","</b>");
 
-                    int pIndex = html.indexOf("<p>", 1);
-                    title = html.substring(11, firstDashIndex - 1).replaceAll("<sup>"," ").replaceAll("</sup>","").replaceAll("<em>","").replaceAll("</em>","");
-                    description = html.substring(firstDashIndex + 2, secndDashIndex - 1);
 
-                    String smallDate = html.substring(secndDashIndex + 2, dateComaIndex + 6);
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH);
-                    LocalDate localDate = LocalDate.parse(smallDate, formatter);
-                    date = localDate.toString() + "T19:30:00.000+05:30";
+                    date = formattedDate + "T" + "18:"+time+"+05:30";
+                    time = time+1;
 
-                    fileName = listOfFiles[i].getName().replaceFirst("[.][^.]+$", "");
+                    fileName =myDataTxt.getName().replaceFirst("[.][^.]+$", "");
                     Files.createDirectories(Paths.get(currentDirectory + "/" + fileName));
 
-                    html = ImageHandler.imageHandler(html,fileName,currentDirectory,httpUtils);
+                    html = ImageHandler.imageHandler(html,fileName,currentDirectory,httpUtils,title,description);
                     html = TableHandler.tableHandler(html);
                     html = LinkHandler.linkHandler(html,fileName);
-                    html= PdfHandler.handlePdf(html,currentDirectory,description,httpUtils);
+                    html = PdfHandler.handlePdf(html,currentDirectory,description,httpUtils,title);
+                    html = FontHandler.fontHandler(html,currentDirectory,fileName);
+                    html = TagHandler.tagHandler(html);
+
+
 
                     int dashIndex = description.indexOf("-");
                     String tagType = description.substring(0,dashIndex);
@@ -110,7 +166,8 @@ public class CreateTemplate {
                     tagArray[0] = tagObject.get(tagType);
 
                     // assigning values to templates.
-                    int index = html.lastIndexOf("<p>");
+                    int pIndex = html.indexOf("<p>", 1);
+                    int index = html.lastIndexOf("<p");
                     StringBuffer stringBuffer = new StringBuffer(html);
                     int length = html.length();
                     stringBuffer.replace(index,length,"");
@@ -139,10 +196,13 @@ public class CreateTemplate {
                         log.severe(e.getMessage());
                     }
                     //calling createpage method.
-                    httpUtils.createPage(title,fileName,currentDirectory, description);
+                   httpUtils.createPage(title,fileName,currentDirectory, description);
 
                 }
             }
+            title = "";
+            dateFromDoc = "";
+            description = "";
 
         }
 

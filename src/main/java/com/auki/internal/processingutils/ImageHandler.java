@@ -8,9 +8,19 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class ImageHandler {
-    public static String imageHandler(String html, String fileName, String currentDirectory, HttpUtils httpUtils) throws IOException {
+    public static String imageHandler(String html, String fileName, String currentDirectory, HttpUtils httpUtils,String title,String description) throws IOException {
+
+        LocalDate currentDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMddyy");
+        String date=currentDate.format(formatter);
+
+        String name = title.replaceAll("[^A-Za-z0-9]","_").toLowerCase();
+        String fullName = description + "-" + name + "-"+date;
+        fullName = fullName.replaceAll("\\_{2,}", "_");
 
         int index = 0;
         int imageCount = 1;
@@ -29,7 +39,7 @@ public class ImageHandler {
             image = ImageIO.read(bis);
             bis.close();
 
-            imageName = fileName + imageCount + ".png";
+            imageName = fullName + imageCount + ".png";
             File outputfile = new File(currentDirectory + "/"+ fileName + "/" + imageName);
             System.out.println(outputfile.getName().toString());
             ImageIO.write(image, "png", outputfile);
@@ -38,7 +48,7 @@ public class ImageHandler {
             StringBuffer stringBuffer = new StringBuffer(html);
             stringBuffer.replace(srcIndex + 5, imgEndIndex - 2, imagePath);
             html = String.valueOf(stringBuffer);
-            httpUtils.uploadImage(outputfile.getPath(),imageName);
+            httpUtils.uploadImage(outputfile.getPath(),imageName,title,description);
             index = imgEndIndex;
             imageCount = imageCount + 1;
         }
